@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Incrypted Plus — Тест</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #080809;
+      --card: #111114;
+      --card-inner: #161619;
+      --surface: rgba(255,255,255,0.035);
+      --surface-hover: rgba(255,255,255,0.065);
+      --border: rgba(255,255,255,0.06);
+      --border-hover: rgba(255,255,255,0.13);
+      --accent: #eb5a3a;
+      --accent-dark: #c04428;
+      --accent-glow: rgba(235,90,58,0.35);
+      --accent-dim: rgba(235,90,58,0.08);
+      --accent-border: rgba(235,90,58,0.22);
+      --green: #34d399;
+      --green-bg: rgba(52,211,153,0.07);
+      --green-border: rgba(52,211,153,0.22);
+      --red: #f87171;
+      --red-bg: rgba(248,113,113,0.06);
+      --red-border: rgba(248,113,113,0.18);
+      --text: #f0f0f3;
+      --text-sec: rgba(255,255,255,0.52);
+      --text-dim: rgba(255,255,255,0.26);
+      --text-ghost: rgba(255,255,255,0.10);
+      --font: 'Inter', -apple-system, sans-serif;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    html, body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
+    body {
+      font-family: var(--font);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .scene {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 24px 16px 40px;
+      position: relative;
+    }
+
+    .hero-glow {
+      position: fixed;
+      top: -300px; left: 50%; transform: translateX(-50%);
+      width: 900px; height: 600px;
+      background: radial-gradient(ellipse 50% 50%, rgba(235,90,58,0.08) 0%, rgba(235,90,58,0.02) 40%, transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+
+    .grid-bg {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+      background-size: 72px 72px;
+      mask-image: radial-gradient(ellipse 70% 50% at 50% 35%, rgba(0,0,0,0.6) 0%, transparent 100%);
+      -webkit-mask-image: radial-gradient(ellipse 70% 50% at 50% 35%, rgba(0,0,0,0.6) 0%, transparent 100%);
+    }
+
+    .card {
+      width: 100%; max-width: 540px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 40px 32px;
+      position: relative; z-index: 1;
+      box-shadow:
+        0 1px 0 0 rgba(255,255,255,0.03) inset,
+        0 40px 100px -20px rgba(0,0,0,0.7);
+      animation: cardIn 0.4s var(--ease) forwards;
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(14px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: -1px; left: 60px; right: 60px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent 0%, rgba(235,90,58,0.5) 50%, transparent 100%);
+    }
+
+    /* Logo */
+    .logo-row {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 28px;
+    }
+    .logo-icon {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      overflow: hidden;
+      flex-shrink: 0;
+      box-shadow: 0 0 0 1px rgba(235,90,58,0.3), 0 4px 16px rgba(235,90,58,0.25);
+    }
+    .logo-icon img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+    .brand {
+      font-size: 18px; font-weight: 800;
+      letter-spacing: 0.01em;
+    }
+    .brand span { color: var(--accent); }
+
+    /* Tag */
+    .tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 20px;
+    }
+    .tag-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px rgba(235,90,58,0.5);
+    }
+
+    /* Intro */
+    .title {
+      font-size: 32px; font-weight: 900;
+      line-height: 1.15; letter-spacing: -0.025em;
+      margin-bottom: 14px;
+    }
+    .title em { color: var(--accent); font-style: normal; }
+    .desc {
+      font-size: 14px; line-height: 1.7;
+      color: var(--text-sec); margin-bottom: 32px;
+    }
+
+    /* Stats */
+    .stats {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 8px; margin-bottom: 32px;
+    }
+    .s-box {
+      text-align: center;
+      padding: 18px 8px 14px;
+      background: var(--card-inner);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+    }
+    .s-val {
+      font-size: 26px; font-weight: 900;
+      letter-spacing: -0.03em;
+      background: linear-gradient(180deg, var(--text) 0%, rgba(255,255,255,0.7) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .s-lbl {
+      font-size: 10px; font-weight: 600;
+      color: var(--text-dim); margin-top: 4px;
+      text-transform: uppercase; letter-spacing: 0.1em;
+    }
+
+    /* CTA */
+    .cta {
+      width: 100%;
+      background: linear-gradient(145deg, #eb5a3a 0%, #d04020 100%);
+      border: none; border-radius: 14px;
+      color: #fff;
+      font-family: var(--font); font-size: 15px; font-weight: 700;
+      padding: 16px; cursor: pointer;
+      transition: all 0.2s var(--ease);
+      letter-spacing: 0.02em;
+      box-shadow:
+        0 1px 0 0 rgba(255,255,255,0.12) inset,
+        0 0 24px rgba(235,90,58,0.2),
+        0 6px 20px rgba(0,0,0,0.3);
+    }
+    .cta:hover { box-shadow: 0 1px 0 0 rgba(255,255,255,0.15) inset, 0 0 40px rgba(235,90,58,0.3), 0 10px 28px rgba(0,0,0,0.4); transform: translateY(-1px); }
+    .cta:active { transform: translateY(0) scale(0.99); }
+
+    .footnote {
+      text-align: center;
+      font-size: 11px; color: var(--text-ghost);
+      margin-top: 16px;
+    }
+
+    /* Quiz */
+    .q-top {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .q-cat {
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      display: flex; align-items: center; gap: 7px;
+    }
+    .q-cat-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      display: inline-block;
+      box-shadow: 0 0 6px currentColor;
+      background: currentColor;
+    }
+    .q-num {
+      font-size: 12px; color: var(--text-dim);
+      font-weight: 500; font-variant-numeric: tabular-nums;
+    }
+
+    /* Progress bar — segmented */
+    .prog {
+      display: flex; gap: 2px;
+      margin-bottom: 26px;
+    }
+    .prog .s {
+      flex: 1; height: 3px; border-radius: 1.5px;
+      background: rgba(255,255,255,0.04);
+      transition: background 0.35s var(--ease);
+    }
+    .prog .s.ok { background: var(--accent); }
+    .prog .s.now {
+      background: linear-gradient(90deg, var(--accent) 30%, rgba(235,90,58,0.15));
+      box-shadow: 0 0 6px rgba(235,90,58,0.3);
+    }
+
+    .q-text {
+      font-size: 18px; font-weight: 700;
+      line-height: 1.5; margin-bottom: 22px;
+      letter-spacing: -0.01em;
+    }
+
+    /* Options */
+    .opts { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+    .o {
+      width: 100%; text-align: left;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      color: var(--text-sec);
+      font-family: var(--font); font-size: 14px;
+      font-weight: 500; line-height: 1.45;
+      padding: 14px 16px;
+      cursor: pointer;
+      display: flex; align-items: flex-start; gap: 12px;
+      transition: all 0.15s var(--ease);
+    }
+    .o:hover:not(:disabled) {
+      background: var(--surface-hover);
+      border-color: var(--border-hover);
+      color: var(--text);
+      transform: translateX(2px);
+    }
+    .o:disabled { cursor: default; }
+    .o-let {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700;
+      color: var(--text-dim);
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+    .o.correct {
+      background: var(--green-bg);
+      border-color: var(--green-border);
+      color: var(--green);
+    }
+    .o.correct .o-let {
+      background: rgba(52,211,153,0.12);
+      border-color: rgba(52,211,153,0.25);
+      color: var(--green);
+    }
+    .o.wrong {
+      background: var(--red-bg);
+      border-color: var(--red-border);
+      color: var(--red);
+    }
+    .o.wrong .o-let {
+      background: rgba(248,113,113,0.1);
+      border-color: rgba(248,113,113,0.2);
+      color: var(--red);
+    }
+
+    /* Explanation */
+    .expl {
+      background: var(--card-inner);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 14px;
+      padding: 16px 18px;
+      font-size: 13px; color: var(--text-sec);
+      line-height: 1.75;
+      margin-bottom: 18px;
+      animation: fadeUp 0.3s var(--ease);
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .expl strong { color: var(--text); font-weight: 600; }
+
+    .next-btn {
+      width: 100%;
+      background: var(--card-inner);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      color: var(--text);
+      font-family: var(--font); font-size: 14px; font-weight: 600;
+      padding: 15px;
+      cursor: pointer;
+      transition: all 0.15s var(--ease);
+      letter-spacing: 0.01em;
+    }
+    .next-btn:hover {
+      background: var(--surface-hover);
+      border-color: var(--border-hover);
+    }
+
+    /* Result */
+    .ring {
+      width: 130px; height: 130px;
+      border-radius: 50%;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      margin: 0 auto 28px;
+    }
+    .ring.pass {
+      background: radial-gradient(circle, rgba(52,211,153,0.1) 0%, transparent 65%);
+      border: 2px solid var(--green-border);
+      box-shadow: 0 0 40px rgba(52,211,153,0.06);
+    }
+    .ring.fail {
+      background: radial-gradient(circle, rgba(248,113,113,0.08) 0%, transparent 65%);
+      border: 2px solid var(--red-border);
+    }
+    .ring-n {
+      font-size: 36px; font-weight: 900;
+      letter-spacing: -0.03em; line-height: 1;
+    }
+    .ring.pass .ring-n { color: var(--green); }
+    .ring.fail .ring-n { color: var(--red); }
+    .ring-p {
+      font-size: 13px; color: var(--text-dim);
+      margin-top: 5px; font-weight: 500;
+    }
+
+    .r-title {
+      font-size: 26px; font-weight: 900;
+      text-align: center; margin-bottom: 10px;
+      letter-spacing: -0.02em;
+    }
+    .r-desc {
+      font-size: 14px; color: var(--text-sec);
+      text-align: center; line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .r-desc b { color: #d0d0d5; }
+
+    .badge {
+      border-radius: 14px; padding: 14px 20px;
+      font-size: 13px; font-weight: 600;
+      text-align: center; margin-bottom: 24px;
+    }
+    .badge.pass {
+      background: var(--green-bg);
+      border: 1px solid var(--green-border);
+      color: var(--green);
+    }
+    .badge.fail {
+      background: var(--red-bg);
+      border: 1px solid var(--red-border);
+      color: var(--red);
+    }
+
+    /* Breakdown */
+    .bd { display: flex; flex-direction: column; gap: 5px; margin-bottom: 24px; }
+    .bd-row {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: var(--card-inner);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .bd-cat { font-size: 12px; font-weight: 600; }
+    .bd-right { display: flex; align-items: center; gap: 4px; }
+    .bd-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+    }
+    .bd-dot.y {
+      background: var(--green);
+      box-shadow: 0 0 5px rgba(52,211,153,0.4);
+    }
+    .bd-dot.n { background: rgba(248,113,113,0.4); }
+    .bd-sc {
+      font-size: 11px; color: var(--text-dim);
+      margin-left: 5px; font-variant-numeric: tabular-nums;
+    }
+
+    .time-badge {
+      text-align: center;
+      font-size: 12px; color: var(--text-dim);
+      margin-bottom: 16px;
+    }
+
+    /* Timer on quiz screen */
+    .timer {
+      font-size: 13px; color: var(--text-dim);
+      font-weight: 500; font-variant-numeric: tabular-nums;
+    }
+
+    @media(max-width:520px) {
+      .card { padding: 28px 20px; border-radius: 20px; }
+      .title { font-size: 26px; }
+      .q-text { font-size: 16px; }
+      .s-val { font-size: 22px; }
+      .r-title { font-size: 22px; }
+      .ring { width: 110px; height: 110px; }
+      .ring-n { font-size: 30px; }
+    }
+  </style>
+</head>
+<body>
+<div class="hero-glow"></div>
+<div class="grid-bg"></div>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const tg = window.Telegram?.WebApp;
+if (tg) {
+  tg.expand();
+  tg.ready();
+}
+
+const PASS = 0.72;
+const LETTERS = ["A","B","C","D"];
+const TOTAL = 25;
+
+// Эндпоинт нашего бэкенда (Vercel serverless function)
+const SUBMIT_URL = "/api/submit";
+
+function getTgUser() {
+  try {
+    return tg?.initDataUnsafe?.user || {};
+  } catch(e) { return {}; }
+}
+
+// initData строкой — для валидации на бэкенде
+function getInitData() {
+  return tg?.initData || "";
+}
+
+// Трекинг событий — заглушка (раньше слалось в Google Sheets)
+function trackEvent(event) {}
+
+const SECTION_COLORS = {
+  "Основы мемкоинов":"#f59e0b","Безопасность":"#ef4444","Pump.fun":"#a78bfa",
+  "Скамы":"#ec4899","Инструменты":"#06b6d4","Риск-менеджмент":"#22c55e",
+  "Мета и анализ":"#3b82f6","MEV и риски":"#f97316","Копитрейдинг":"#a855f7",
+  "Терминология":"#84cc16","Тайминг":"#eab308","Чек-лист":"#14b8a6","Психология":"#e11d48",
+};
+
+const _AK = 7;
+const _EA = [6,5,6,5,6,7,6,7,6,6,5,6,5,6,5,5,6,6,6,5,6,5,6,6,5];
+
+const Q = [
+  {id:1,s:"Скамы",q:"Какую главную опасность KOL (Key Opinion Leaders) представляют для новичка?",o:["Дают слишком сложные технические советы","Могут использовать свою аудиторию как exit liquidity — продают токены, купленные за счёт подписчиков","Берут слишком высокую комиссию за сигналы","Продвигают только Ethereum-проекты"],e:"KOL часто получают токены на ранней стадии или по заниженной цене. Когда они рекомендуют токен аудитории, подписчики покупают — а KOL продаёт в этот рост. Аудитория становится выходной ликвидностью."},
+  {id:2,s:"Безопасность",q:"Где наименее безопасно хранить сид-фразу от криптокошелька?",o:["Записать на бумаге и хранить дома","Хранить в аппаратном устройстве Ledger","Сохранить в облачных заметках или на телефоне","Запомнить наизусть"],e:"Сид-фразу нельзя хранить в интернете — облако, заметки, мессенджеры. Только бумага или аппаратный кошелек."},
+  {id:3,s:"Безопасность",q:"Какой кошелек рекомендуется использовать для торговли через Telegram-ботов?",o:["Основной кошелек со всеми долгосрочными активами","Отдельный трейдинг-кошелек, созданный специально для активной торговли","Один кошелек для всего — так удобнее","Кошелек биржи Binance"],e:"Для торговли через ботов обязательно создается отдельный кошелек. Никогда не подключайте основной кошелек к Telegram-ботам."},
+  {id:4,s:"Pump.fun",q:"По какому механизму формируется цена токена на Pump.fun до миграции?",o:["Классический биржевой стакан (ордербук)","Фиксированная цена, установленная создателем смарт-контракта","Кривая связывания (Bonding curve), где цена растет по мере выкупа токенов","Аукцион между холдерами"],e:"Bonding curve: чем позже покупаете, тем дороже. Цена токена растет пропорционально объему покупок."},
+  {id:5,s:"Pump.fun",q:"Какой процент токенов на Pump.fun доходит до миграции на PumpSwap?",o:["Около 50%","Около 1%","Около 25%","Миграция происходит автоматически через 24 часа"],e:"99% токенов на Pump.fun не достигают миграции и обнуляются за 15–30 минут."},
+  {id:6,s:"Pump.fun",q:"Какой процент токенов у девелопера считается приемлемым для безопасного входа?",o:["До 5%","До 25%","До 50%","Процент не имеет значения"],e:"До 5% у девелопера — норма. Более 10% — серьезный риск дампа. Более 25% — красный флаг."},
+  {id:7,s:"Скамы",q:"Что такое Rugpull?",o:["Токен, который невозможно продать из-за блокировки в смарт-контракте","Ситуация, когда девелопер выводит ликвидность и токен обнуляется","Клон известного мема с похожим названием","Атака MEV-ботов на токен"],e:"Rugpull — девелопер выводит ликвидность, цена мгновенно падает до нуля."},
+  {id:8,s:"Скамы",q:"Что такое Honeypot?",o:["Скам, где токен можно купить, но невозможно продать","Токен с очень высокой доходностью","Бонус для ранних инвесторов от девелопера","Стратегия копирования сделок"],e:"Honeypot — ловушка. Продажи заблокированы в смарт-контракте. На графике виден рост, но выйти из позиции невозможно."},
+  {id:9,s:"Скамы",q:"Как отличить фейк-токен от оригинала?",o:["По высокой ликвидности — настоящие токены всегда ликвидны","Проверить контрактный адрес (CA) — не ориентироваться только на название","Ориентироваться на количество холдеров","Смотреть только на визуальное оформление токена"],e:"Фейки копируют названия, тикеры и арты. Единственный способ проверить — сверить контрактный адрес (CA) с официальными источниками."},
+  {id:10,s:"Инструменты",q:"Какой инструмент используется для анализа новых токенов на Pump.fun ДО их миграции?",o:["Dexscreener — он показывает все токены в реальном времени","Axiom или GMGN — они отображают токены на ранней стадии","CoinGecko — там самая актуальная информация","Binance — там есть все новые токены Solana"],e:"Dexscreener не показывает токены до миграции. Для ранних стадий используют Axiom или GMGN."},
+  {id:11,s:"Инструменты",q:"Для чего в первую очередь нужен Dexscreener?",o:["Для торговли токенами до их миграции с Pump.fun","Для снайпинга новых токенов в первый блок","Для анализа графиков, ликвидности и объемов токенов после миграции","Для копитрейдинга смарт-кошельков"],e:"Dexscreener подключается после миграции токена. Там смотрят графики, ликвидность, объемы."},
+  {id:12,s:"Инструменты",q:"Главная задача бота Trojan в мемкоин-торговле — это...",o:["Аналитика графиков и объемов торгов","Ускорение входа и выхода из позиций: покупка/продажа за секунды через Telegram","Поиск новых токенов на Pump.fun","Хранение криптовалюты в холодном кошельке"],e:"Trojan — торговый Telegram-бот. Главное преимущество — скорость: вход/выход за секунды, лимитные ордера, тейки и стопы."},
+  {id:13,s:"Риск-менеджмент",q:"Какой максимальный процент от депозита рекомендуется вкладывать в одну сделку новичку?",o:["50–70% — чтобы заработать больше","100% — если очень уверен в токене","1–5% от депозита, выделенного под мемкоины","Нет ограничений — все зависит от интуиции"],e:"Не более 1–5% на сделку. Это позволяет выдержать серию убытков и остаться в игре."},
+  {id:14,s:"Риск-менеджмент",q:"Почему усреднение убыточной позиции опасно в мемкоинах?",o:["Хорошая стратегия — снижает среднюю цену входа","Вы докупаете скам или умирающий токен, увеличивая убыток","Нейтральная тактика — работает одинаково в любой ситуации","Это разрешено только при работе со смарт-кошельками"],e:"В мемкоинах усреднение = увеличение ставки в токен, который часто является скамом или просто умирает."},
+  {id:15,s:"Риск-менеджмент",q:"Рекомендуемая стратегия фиксации прибыли в мемкоинах — это...",o:["Продать все сразу при первом росте","Никогда не продавать — держать до максимума","Поэтапный выход: часть на x2, часть на x3, остаток — мунбэг","Продавать только если токен дал x10 и выше"],e:"Поэтапная фиксация: 30% на x2, 30% на x3, остаток — мунбэг. Это защищает от полной потери прибыли при развороте."},
+  {id:16,s:"Мета и анализ",q:"Что такое «мета» в контексте мемкоин-трейдинга?",o:["Технический анализ графика токена","Название компании — разработчика блокчейна Solana","Преобладающий рыночный тренд или тема, захватившая внимание комьюнити","Метаданные токена в смарт-контракте"],e:"Мета — текущий тренд рынка (AI, политика, животные, вирусные мемы). Токены, попадающие в мету, имеют больше шансов на рост."},
+  {id:17,s:"Мета и анализ",q:"Что является тревожным сигналом при анализе объемов токена?",o:["Стабильный рост объемов вместе с ростом цены","Высокий объем торгов, но цена стоит на месте или падает","Органическая активность в комментариях","Равномерное распределение холдеров"],e:"Высокий объем + стагнация цены = искусственный объем. Движение цены всегда должно сопровождать рост объема."},
+  {id:18,s:"MEV и риски",q:"Чем опасны MEV-снайперы для обычного трейдера?",o:["Они взламывают кошельки трейдеров","Они покупают токен раньше вас, повышая точку входа, потом сливаются — вы в минусе","Они блокируют транзакции в сети Solana","Они создают фейк-токены с похожими названиями"],e:"MEV-боты выкупают позицию раньше вас (фронтран), вы входите по худшей цене, они сливаются — вы в минусе."},
+  {id:19,s:"Копитрейдинг",q:"Главный недостаток копитрейдинга мемкоинов — это...",o:["Невозможность настроить размер позиции","Точка входа всегда позже оригинальной, что снижает потенциальную доходность","Копитрейдинг полностью запрещен на Solana","Нельзя копировать более одного кошелька одновременно"],e:"Копитрейдеры входят позже — это снижает профит. Плюс популярные кошельки копирует весь рынок."},
+  {id:20,s:"Копитрейдинг",q:"На что прежде всего нужно смотреть при выборе кошелька для копитрейдинга?",o:["Только на общий ROI — чем выше, тем лучше","На количество подписчиков трейдера в X","На стабильность стратегии: winrate, поведение в минусовых сделках, как фиксирует прибыль","На размер депозита — только крупные кошельки заслуживают доверия"],e:"Высокий ROI от одной ракеты — не показатель. Важна повторяемость: winrate, стиль входов/выходов, поведение в убыточных позициях."},
+  {id:21,s:"Терминология",q:"Что означает термин «туземун» (to the moon)?",o:["Кошелек с максимальным балансом SOL","Стремительный и мощный рост цены токена","Мер Incrypted+","Холодный кошелек для безопасного хранения активов"],e:"Туземун (to the moon) — сленг, обозначающий резкий и сильный рост цены актива."},
+  {id:22,s:"Психология",q:"Почему тильт и revenge trading опасны для трейдера?",o:["Помогают быстрее вернуть убытки — это нормальная практика","Это стратегия, которую используют только опытные трейдеры","Приводят к нарушению стратегии, увеличению рисков и сливу депозита","Эффективны при маленьких убытках"],e:"Тильт и попытки быстро отбить потери ломают дисциплину. Трейдер начинает увеличивать размер позиций, игнорировать стоп-лоссы и входить без анализа. Revenge trading — одна из главных причин полного слива у новичков."},
+  {id:23,s:"Тайминг",q:"Какой период лучше всего подходит для активной торговли мемкоинами?",o:["Ночь — меньше конкурентов и ботов","Дневная и вечерняя сессия — пик активности европейских и американских трейдеров","Время не имеет значения","Раннее утро — больше органических запусков"],e:"Дневная и вечерняя сессия — оптимальное время: днем активны трейдеры из Европы, вечером подключаются США."},
+  {id:24,s:"Чек-лист",q:"Что входит в стартовый чек-лист новичка после онбординга?",o:["Сразу вложить весь депозит в топ-10 токенов по объему","Создать Phantom-кошелек, установить Trojan/Bloom, зарегистрироваться в Axiom и GMGN","Подождать 6 месяцев и изучить только технический анализ","Начать с копитрейдинга без изучения базы — так быстрее"],e:"Стартовый чек-лист: создать кошелек, установить торговые боты, зарегистрироваться в терминалах, начать наблюдать."},
+  {id:25,s:"Психология",q:"Опытный трейдер пропускает сделку, в которой не уверен. Это...",o:["Ошибка — нужно использовать каждую возможность","Признак слабости и нерешительности","Осознанное решение — пропущенная сделка тоже является частью стратегии","Допустимо только для трейдеров с большим депозитом"],e:"Дисциплина — умение НЕ торговать, когда нет повода. Всегда будет следующая возможность."},
+].map((q, i) => ({ ...q, c: _EA[i] ^ _AK }));
+
+function Logo() {
+  return (
+    <div className="logo-row">
+      <div className="logo-icon">
+        <img src="logo.png" alt=""/>
+      </div>
+      <div className="brand">Incrypted<span>+</span></div>
+    </div>
+  );
+}
+
+// Fisher-Yates shuffle
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function App() {
+  const [screen, setScreen] = useState("intro");
+  const [questions, setQuestions] = useState(Q);
+  const [current, setCurrent] = useState(0);
+  const [answers, setAnswers] = useState({});
+  const [selected, setSelected] = useState(null);
+  const [showExpl, setShowExpl] = useState(false);
+  const [score, setScore] = useState(0);
+  const [dataSent, setDataSent] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+  const startTime = useRef(Date.now());
+  const timerRef = useRef(null);
+
+  const total = questions.length;
+  const q = questions[current];
+  const passed = score / total >= PASS;
+  const sc = SECTION_COLORS[q?.s] || "#888";
+
+  // Timer
+  useEffect(() => {
+    if (screen === "quiz") {
+      timerRef.current = setInterval(() => {
+        setElapsed(Math.floor((Date.now() - startTime.current) / 1000));
+      }, 1000);
+      return () => clearInterval(timerRef.current);
+    }
+    if (screen === "result" && timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+  }, [screen]);
+
+  const timerMin = Math.floor(elapsed / 60);
+  const timerSec = elapsed % 60;
+  const timerStr = `${timerMin}:${timerSec < 10 ? '0' + timerSec : timerSec}`;
+
+  // Section breakdown
+  const secRes = {};
+  questions.forEach((item, i) => {
+    if (!secRes[item.s]) secRes[item.s] = { total: 0, correct: 0 };
+    secRes[item.s].total++;
+    if (answers[i] === item.c) secRes[item.s].correct++;
+  });
+
+  function pick(idx) {
+    if (selected !== null) return;
+    setSelected(idx);
+    setShowExpl(true);
+    setAnswers(p => ({ ...p, [current]: idx }));
+    // Автоскролл к кнопке "Следующий вопрос"
+    setTimeout(() => {
+      const btn = document.querySelector('.next-btn');
+      if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  }
+
+  function next() {
+    const newAns = { ...answers, [current]: selected };
+    if (current + 1 >= total) {
+      const correct = Object.entries(newAns).filter(([i, a]) => questions[+i].c === a).length;
+      setScore(correct);
+      trackEvent("completed");
+      setScreen("result");
+    } else {
+      setCurrent(c => c + 1);
+      setSelected(null);
+      setShowExpl(false);
+    }
+  }
+
+  // sendStatus: idle | sending | success | error
+  const [sendStatus, setSendStatus] = useState("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  async function sendResult() {
+    if (dataSent || sendStatus === "sending") return;
+
+    setSendStatus("sending");
+    setErrorMsg("");
+    if (tg?.MainButton) {
+      tg.MainButton.showProgress();
+      tg.MainButton.disable();
+    }
+
+    const timeSpent = Math.round((Date.now() - startTime.current) / 1000);
+    const finalSec = {};
+    Q.forEach((item, i) => {
+      if (!finalSec[item.s]) finalSec[item.s] = { total: 0, correct: 0 };
+      finalSec[item.s].total++;
+      if (answers[i] === item.c) finalSec[item.s].correct++;
+    });
+
+    const payload = {
+      initData: getInitData(),
+      score,
+      total,
+      passed: score / total >= PASS,
+      sections: finalSec,
+      time_spent: timeSpent,
+    };
+
+    try {
+      const res = await fetch(SUBMIT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Ошибка отправки");
+
+      setDataSent(true);
+      setSendStatus("success");
+      if (tg?.MainButton) {
+        tg.MainButton.hideProgress();
+        tg.MainButton.enable();
+      }
+      // Закрываем WebApp — пользователь возвращается в чат, где сработала цепочка
+      setTimeout(() => { try { tg?.close(); } catch(e) {} }, 800);
+    } catch (e) {
+      console.error(e);
+      setSendStatus("error");
+      setErrorMsg(String(e.message || e));
+      if (tg?.MainButton) {
+        tg.MainButton.hideProgress();
+        tg.MainButton.enable();
+      }
+    }
+  }
+
+  // MainButton на экране результата
+  useEffect(() => {
+    if (screen === "result" && tg?.MainButton) {
+      const label = sendStatus === "error"
+        ? "Повторить"
+        : passed ? "Забрать материалы" : "Попробовать еще раз";
+      tg.MainButton.setText(label);
+      tg.MainButton.show();
+      tg.MainButton.onClick(sendResult);
+      return () => {
+        tg.MainButton.offClick(sendResult);
+        tg.MainButton.hide();
+      };
+    }
+  }, [screen, score, dataSent, sendStatus]);
+
+  // INTRO
+  if (screen === "intro") return (
+    <div className="scene">
+      <div className="card">
+        <Logo/>
+        <div className="tag">
+          <span className="tag-dot"></span>
+          Квиз · Мемкоины
+        </div>
+        <h1 className="title">Насколько ты шаришь<br/>в <em>мемкоинах</em>?</h1>
+        <p className="desc">
+          25 вопросов — от скамов и MEV до риск-менеджмента и меты.
+          После каждого ответа — объяснение.
+        </p>
+        <div className="stats">
+          <div className="s-box"><div className="s-val">{total}</div><div className="s-lbl">Вопросов</div></div>
+          <div className="s-box"><div className="s-val">~15</div><div className="s-lbl">Минут</div></div>
+          <div className="s-box"><div className="s-val">{Math.round(PASS*100)}%</div><div className="s-lbl">Проходной</div></div>
+        </div>
+        <button className="cta" onClick={() => {
+          trackEvent("started");
+          setQuestions(shuffleArray(Q));
+          setAnswers({});
+          setCurrent(0);
+          setSelected(null);
+          setShowExpl(false);
+          setElapsed(0);
+          startTime.current = Date.now();
+          setScreen("quiz");
+        }}>
+          Поехали
+        </button>
+      </div>
+    </div>
+  );
+
+  // QUIZ
+  if (screen === "quiz") return (
+    <div className="scene">
+      <div className="card">
+        <div className="q-top">
+          <span className="q-cat" style={{color: sc}}>
+            <span className="q-cat-dot" style={{background: sc}}></span>
+            {q.s}
+          </span>
+          <span className="timer">{timerStr}</span>
+          <span className="q-num">{current + 1} / {total}</span>
+        </div>
+        <div className="prog">
+          {Array.from({length: total}).map((_, i) => (
+            <div key={i} className={`s${i < current ? " ok" : i === current ? " now" : ""}`}/>
+          ))}
+        </div>
+        <p className="q-text">{q.q}</p>
+        <div className="opts">
+          {q.o.map((opt, idx) => {
+            let cls = "o";
+            if (selected !== null) {
+              if (idx === q.c) cls += " correct";
+              else if (idx === selected) cls += " wrong";
+            }
+            return (
+              <button key={idx} className={cls} onClick={() => pick(idx)} disabled={selected !== null}>
+                <span className="o-let">{selected !== null ? (idx === q.c ? "✓" : idx === selected ? "✗" : LETTERS[idx]) : LETTERS[idx]}</span>
+                <span>{opt}</span>
+              </button>
+            );
+          })}
+        </div>
+        {showExpl && (
+          <div className="expl">
+            <strong>{selected === q.c ? "Точно. " : "Мимо. "}</strong>{q.e}
+          </div>
+        )}
+        {selected !== null && (
+          <button className="next-btn" onClick={next}>
+            {current + 1 >= total ? "Узнать результат" : "Дальше"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  // RESULT
+  if (screen === "result") {
+    const pct = Math.round((score / total) * 100);
+    const timeSpent = Math.round((Date.now() - startTime.current) / 1000);
+    const minutes = Math.floor(timeSpent / 60);
+    const seconds = timeSpent % 60;
+    return (
+      <div className="scene">
+        <div className="card" style={{textAlign: "center"}}>
+          <Logo/>
+          <div className={`ring ${passed ? "pass" : "fail"}`}>
+            <span className="ring-n">{score}/{total}</span>
+            <span className="ring-p">{pct}%</span>
+          </div>
+
+          <h2 className="r-title" style={{color: passed ? "var(--green)" : "var(--red)"}}>
+            {passed ? "База есть" : "Пока мимо"}
+          </h2>
+          <p className="r-desc">
+            {passed
+              ? `${score} из ${total} — выше проходного.`
+              : `${score} из ${total}. До проходного не хватило.`}
+          </p>
+
+          <div className="time-badge">
+            {minutes}:{seconds < 10 ? "0" + seconds : seconds}
+          </div>
+
+          <div className={`badge ${passed ? "pass" : "fail"}`}>
+            {passed
+              ? `${pct}% правильных`
+              : `${pct}% из ${Math.round(PASS*100)}%`}
+          </div>
+
+          <div className="bd" style={{textAlign: "left"}}>
+            {Object.entries(secRes).map(([sec, r]) => (
+              <div className="bd-row" key={sec}>
+                <span className="bd-cat" style={{color: SECTION_COLORS[sec] || "#888"}}>{sec}</span>
+                <div className="bd-right">
+                  {Array.from({length: r.total}).map((_, i) => (
+                    <span key={i} className={`bd-dot ${i < r.correct ? "y" : "n"}`}/>
+                  ))}
+                  <span className="bd-sc">{r.correct}/{r.total}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <p className="footnote">
+            {sendStatus === "sending" && "Отправляем результат..."}
+            {sendStatus === "success" && "Готово — загляни в бота"}
+            {sendStatus === "error" && `Не удалось отправить: ${errorMsg}. Жми «Повторить»`}
+            {sendStatus === "idle" && "Жми кнопку — заберешь материалы в боте"}
+          </p>
+        </div>
+      </div>
+    );
+  }
+  return null;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
