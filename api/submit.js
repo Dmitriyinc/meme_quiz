@@ -179,9 +179,7 @@ export default async function handler(req, res) {
     const varsToSet = [
       ['score', String(score)],
       ['total', String(total)],
-      ['passed_quiz', passed ? '1' : '0'],
-      ['quiz_percent', String(percent)],
-      ['quiz_time_sec', String(time_spent || 0)],
+      ['passed_quiz', passed ? 'yes' : 'no'],
     ];
 
     const failedVars = [];
