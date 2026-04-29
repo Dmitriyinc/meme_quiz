@@ -462,6 +462,15 @@ function getInitData() {
   return tg?.initData || "";
 }
 
+// SendPulse contact_id из URL: ?cid=XXXXX
+// Подставляется в URL кнопки WebApp в SendPulse через переменную {{contact_id}}
+function getContactId() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("cid") || "";
+  } catch(e) { return ""; }
+}
+
 // Трекинг событий — заглушка (раньше слалось в Google Sheets)
 function trackEvent(event) {}
 
@@ -617,6 +626,7 @@ function App() {
 
     const payload = {
       initData: getInitData(),
+      cid: getContactId(),
       score,
       total,
       passed: score / total >= PASS,

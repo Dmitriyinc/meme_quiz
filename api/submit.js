@@ -86,16 +86,26 @@ async function spRequest(path, { method = 'GET', body, token } = {}) {
   return json;
 }
 
-// Получаем contact_id по Telegram chat_id (он же user_id в WebApp)
+// Получаем contact_id по Telegram chat_id.
+// SendPulse-эндпоинт getByTelegramChatId работает нестабильно (часто 404 даже если контакт есть).
+// Поэтому идём через /telegram/contacts/list — он стабильно работает и поддерживает фильтрацию.
 async function findContactByTelegramId(telegramId, botId) {
+  // Берём первую страницу контактов (лимит 100), ищем по telegram_id.
+  // На больших ботах нужна пагинация, но для нашего кейса этого хватит.
+  // SendPulse сортирует по дате последней активности — наш юзер только что прошёл квиз → он в топе.
   const data = await spRequest(
-    `/telegram/contacts/getByTelegramChatId?telegram_chat_id=${telegramId}&bot_id=${botId}`
+    `/telegram/contacts/list?bot_id=${botId}&limit=100`
   );
-  // SendPulse отдаёт либо { data: { id, ... } }, либо { data: [...] } — нормализуем
-  const c = data?.data;
-  if (!c) return null;
-  if (Array.isArray(c)) return c[0]?.id || null;
-  return c.id || null;
+  const contacts = Array.isArray(data?.data) ? data.data : [];
+
+  // Ищем контакт чей telegram_id совпадает (приводим к строке на всякий случай)
+  const tgIdStr = String(telegramId);
+  const found = contacts.find(c =>
+    String(c.telegram_id) === tgIdStr ||
+    String(c.channel_data?.id) === tgIdStr
+  );
+
+  return found?.id || null;
 }
 
 async function setContactVariable(contactId, variableName, variableValue) {
@@ -130,7 +140,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { initData, score, total, passed, sections, time_spent } = req.body || {};
+    const { initData, cid, score, total, passed, sections, time_spent } = req.body || {};
 
     // 1. Валидация Telegram initData
     const user = verifyTelegramInitData(initData, process.env.BOT_TOKEN);
@@ -144,37 +154,45 @@ export default async function handler(req, res) {
     }
 
     const telegramId = user.id;
-    const botId = process.env.SP_BOT_ID; // bot_id в SendPulse (НЕ Telegram bot id)
+    const botId = process.env.SP_BOT_ID;
 
-    // 3. Находим контакт
-    const contactId = await findContactByTelegramId(telegramId, botId);
+    // 3. Получаем contact_id
+    // Приоритет: cid из URL (передан через {{contact_id}} в SendPulse) → быстро и надёжно.
+    // Fallback: поиск через list (если по какой-то причине cid не пришёл).
+    let contactId = (cid && /^[a-f0-9]{24}$/i.test(cid)) ? cid : null;
+
+    if (!contactId) {
+      contactId = await findContactByTelegramId(telegramId, botId);
+    }
+
     if (!contactId) {
       return res.status(404).json({
-        error: 'Contact not found in SendPulse. Сначала пользователь должен запустить бота.',
+        error: 'Сначала запусти бота — нажми /start в чате, потом возвращайся к тесту.',
       });
     }
 
     // 4. Пишем переменные результата
+    // Имена переменных совпадают с теми, что настроены в SendPulse:
+    //   score, total, passed_quiz — основные
+    //   quiz_percent, quiz_time_sec — дополнительные (если есть)
     const percent = Math.round((score / total) * 100);
-    const resultLabel = passed ? 'passed' : 'failed';
 
-    // Несколько переменных — пригодятся в цепочках для персонализации
     await Promise.all([
-      setContactVariable(contactId, 'quiz_result', resultLabel),
-      setContactVariable(contactId, 'quiz_score', String(score)),
-      setContactVariable(contactId, 'quiz_total', String(total)),
+      setContactVariable(contactId, 'score', String(score)),
+      setContactVariable(contactId, 'total', String(total)),
+      setContactVariable(contactId, 'passed_quiz', passed ? '1' : '0'),
       setContactVariable(contactId, 'quiz_percent', String(percent)),
       setContactVariable(contactId, 'quiz_time_sec', String(time_spent || 0)),
     ]);
 
     // 5. Запускаем нужный flow
     const flowId = passed ? process.env.SP_FLOW_PASSED_ID : process.env.SP_FLOW_FAILED_ID;
-    await runFlow(contactId, flowId, `quiz_${resultLabel}_${percent}`);
+    await runFlow(contactId, flowId, `quiz_${passed ? 'passed' : 'failed'}_${percent}`);
 
     return res.status(200).json({
       ok: true,
       contact_id: contactId,
-      result: resultLabel,
+      passed,
       score,
       total,
       percent,
