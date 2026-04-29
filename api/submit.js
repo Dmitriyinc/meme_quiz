@@ -171,15 +171,15 @@ export default async function handler(req, res) {
       });
     }
 
-    // 4. Пишем переменные результата
-    // Записываем по очереди и логируем каждую — если какая-то упадёт,
-    // в логах будет видно её точное имя.
+    // 4. Пишем переменные результата в SendPulse
     const percent = Math.round((score / total) * 100);
 
     const varsToSet = [
       ['score', String(score)],
       ['total', String(total)],
       ['passed_quiz', passed ? 'yes' : 'no'],
+      ['quiz_percent', String(percent)],
+      ['quiz_time_sec', String(time_spent || 0)],
     ];
 
     const failedVars = [];
@@ -193,17 +193,41 @@ export default async function handler(req, res) {
       }
     }
 
-    // Если хотя бы одна важная переменная не записалась — это критично, не запускаем flow
     if (failedVars.length > 0) {
       return res.status(500).json({
-        error: `Не удалось записать переменные: ${failedVars.join(', ')}. Проверь что они созданы в SendPulse.`,
+        error: `Не удалось записать переменные: ${failedVars.join(', ')}. Проверь что они созданы в полях контактов SendPulse.`,
         failed: failedVars,
       });
     }
 
-    // 5. Запускаем нужный flow
+    // 5. Запускаем нужный flow в SendPulse
     const flowId = passed ? process.env.SP_FLOW_PASSED_ID : process.env.SP_FLOW_FAILED_ID;
     await runFlow(contactId, flowId, `quiz_${passed ? 'passed' : 'failed'}_${percent}`);
+
+    // 6. Логируем в Google Sheets (необязательно — если SHEETS_WEBHOOK не задан, шаг пропускается)
+    // Не блокируем основной flow если Sheets недоступен — просто логируем ошибку.
+    if (process.env.SHEETS_WEBHOOK) {
+      try {
+        await fetch(process.env.SHEETS_WEBHOOK, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            timestamp: new Date().toISOString(),
+            user_id: telegramId,
+            username: user.username || '',
+            first_name: user.first_name || '',
+            score,
+            total,
+            passed,
+            time_spent: time_spent || 0,
+            sections: sections ? JSON.stringify(sections) : '',
+          }),
+        });
+        console.log('✓ logged to Google Sheets');
+      } catch (e) {
+        console.error('✗ Sheets logging failed:', e.message);
+      }
+    }
 
     return res.status(200).json({
       ok: true,
