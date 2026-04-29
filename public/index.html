@@ -489,8 +489,9 @@ function trackEvent(event) {
   } catch(e) {}
 }
 
-// Трекаем открытие квиза с небольшой задержкой чтоб SDK инициализировался
-setTimeout(() => trackEvent("opened"), 500);
+// Трекаем открытие квиза — небольшая задержка чтобы Telegram SDK успел
+// инициализироваться и initData был валидным
+setTimeout(() => trackEvent("opened"), 100);
 
 const SECTION_COLORS = {
   "Основы мемкоинов":"#f59e0b","Безопасность":"#ef4444","Pump.fun":"#a78bfa",
@@ -723,7 +724,6 @@ function App() {
           <div className="s-box"><div className="s-val">{Math.round(PASS*100)}%</div><div className="s-lbl">Проходной</div></div>
         </div>
         <button className="cta" onClick={() => {
-          trackEvent("started");
           setQuestions(shuffleArray(Q));
           setAnswers({});
           setCurrent(0);
